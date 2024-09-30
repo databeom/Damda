@@ -41,6 +41,27 @@ app.use(express.static(path.join(__dirname, 'public')));
 // 라우터 등록
 app.use('/', indexRouter); // 홈 페이지 라우터 등록
 
+// 라우트 설정
+app.get('/', (req, res) => {
+  res.render('choice'); // choice.ejs 렌더링
+});
+
+app.get('/about', (req, res) => {
+  res.render('course'); // course.ejs 렌더링
+});
+
+app.get('/contact', (req, res) => {
+  res.render('home'); // home.ejs 렌더링
+});
+
+app.get('/about', (req, res) => {
+  res.render('map'); // map.ejs 렌더링
+});
+
+app.get('/contact', (req, res) => {
+  res.render('search'); // search.ejs 렌더링
+});
+
 // 라우트: 이미지 데이터 API
 app.get('/api/maps', async (req, res) => {
   const location = req.query.location; // 지역 필터링을 위한 쿼리 파라미터
