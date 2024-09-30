@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonTrip</title>
+    <link rel="icon" href="/images/course.png" type="image/png">
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=<%= KAKAO_MAP_APPKEY %>&autoload=false"></script>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        #map {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background-color: #f0f0f0; /* 지도 배경색 (예시) */
+        }
+
+        #map a {
+            z-index: 10; /* 이미지가 지도 위에 보이도록 설정 */
+        }
+
+        .input-row {
+            margin-bottom: 20px; /* 버튼 그룹 아래 여백 */
+        }
+
+        .input-row button {
+            margin-right: 10px; /* 버튼 사이 간격 */
+        }
+
+        .input-row button:last-child {
+            margin-right: 0; /* 마지막 버튼은 오른쪽 여백 없음 */
+        }
+
+        .fixed-button-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+
+        .fixed-button {
+            background-color: #007bff; /* 배경 색상 */
+            color: white; /* 글자 색상 */
+            border: none; /* 테두리 없음 */
+            padding: 10px 20px; /* 패딩 */
+            border-radius: 20px; /* 둥근 모서리 */
+            cursor: pointer; /* 커서 모양 */
+            text-align: center; /* 텍스트 중앙 정렬 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container-custom mt-5">
+        <div class="jumbotron text-center" style="background-color: #007bff; color: white;">
+            <h1 class="display-4">카카오 길찾기 서비스</h1>
+            <a href="/" id="newCourseButton" class="btn btn-light btn-lg">코스 새로 짜기</a>
+        </div>
+
+        <div class="text-center mt-3">
+            <div class="image-gallery">
+                <% 
+                const displayedImages = new Set(); // 중복 체크를 위한 Set 생성
+                map.forEach(function(course) { 
+                    if (!displayedImages.has(course.firstimage)) { // 이미지가 이미 표시된 경우 체크
+                        displayedImages.add(course.firstimage); // Set에 이미지 추가
+                %>
+                        <img src="<%= course.firstimage %>" alt="Course Image" class="gallery-image"
+                             title="<%= course.title %>" addr="<%= course.addr %>"
+                             onerror="this.onerror=null; this.src='/images/default-image.png';"
+                             onclick="showImage(this.src);"/>
+                <% 
+                    } 
+                }); 
+                %>
+            </div>
+        </div>
+        
+        
+
+        <!-- 버튼 추가 -->
+        <div class="input-row">
+            <!-- <button id="addPointButton" class="btn btn-primary">위치 추가 (기본 위치 사용)</button> -->
+            <button id="addCurrentLocationButton" class="btn btn-success">현재 위치 추가</button>
+            <button id="drawLineButton" class="btn btn-secondary">라인 그리기</button>
+            <button id="resetButton" class="btn btn-danger">초기화</button>
+        </div>
+
+        <div id="map" style="position: relative; width: 100%; height: 500px;">
+            <a href="/choice" style="position: absolute; bottom: 20px; right: 20px;">
+                <img src="/images/choice.png" alt="Choice로 이동하기" style="cursor: pointer; width: 100px; height: auto;" />
+            </a>
+        </div>
+
+        <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class = "modal-content">
+                    <div class="modal-header">
+                        <h5 class ="modal-title" id = "imageModalLabel">이미지 미리보기</h5>
+                    </div>
+                    <div class="modal-body">
+                        <img src="" alt="Preview" class="img-fluid" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fixed-button-container">
+            <button class="fixed-button" data-toggle="modal" data-target="#completeCourseModal">
+                코스 완성하기
+            </button>
+        </div>
+        
+        <!-- 모달 -->
+        <div class="modal fade" id="completeCourseModal" tabindex="-1" aria-labelledby="completeCourseModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="completeCourseModalLabel">코스 완성하기</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" id="courseTitleInput" placeholder="제목을 입력하세요" class="form-control">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+                        <button type="button" class="btn btn-primary" id="confirmCompleteButton">확인</button>
+                    </div>
+                </div>
+            </div>
+        </div>        
+      
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.getElementById('newCourseButton').onclick = function() {
+            // 서버에 데이터 삭제 요청
+            fetch('/deleteCourses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({}) // 필요한 데이터가 있다면 여기에 추가
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('삭제 요청에 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // image-gallery 내용을 모두 지우기
+                    document.querySelector('.image-gallery').innerHTML = '';
+
+                    // 메인 페이지로 이동
+                    location.href = '/'; // 메인 페이지 URL
+                } else {
+                    alert("코스를 삭제하는 데 실패했습니다.");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("오류가 발생했습니다.");
+            });
+        };
+
+        kakao.maps.load(function() {
+            var mapContainer = document.getElementById('map'),
+                mapOption = {
+                    center: new kakao.maps.LatLng('<%= map[0].mapy %>', '<%= map[0].mapx %>'), // 첫 번째 코스를 중심으로 설정
+                    level: 3
+                };
+    
+            var map = new kakao.maps.Map(mapContainer, mapOption);
+            var markers = [];
+            var polyline;
+    
+            // 각 코스에 대한 마커 추가
+            <% map.forEach(function(course) { %>
+                var position = new kakao.maps.LatLng(<%= course.mapy %>, <%= course.mapx %>);
+                var marker = new kakao.maps.Marker({
+                    position: position,
+                    title: "<%= course.title %>" // 마커 제목 설정
+                });
+                marker.setMap(map); // 마커를 지도에 추가
+                markers.push(marker); // 마커를 배열에 저장
+    
+                // 인포윈도우 생성
+                var infowindow = new kakao.maps.InfoWindow({
+                    content: '<div style="padding:5px;">' + "<%= course.title %>" + '</div>' // 인포윈도우 내용 설정
+                });
+    
+                // 마커 클릭 이벤트 추가
+                kakao.maps.event.addListener(marker, 'click', function() {
+                    infowindow.open(map, marker); // 마커 클릭 시 인포윈도우 열기
+                });
+            <% }); %>
+    
+            document.getElementById('addCurrentLocationButton').onclick = function() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        var currentPosition = new kakao.maps.LatLng(position.coords.latitude, position.coords.longitude);
+                        var marker = new kakao.maps.Marker({
+                            position: currentPosition
+                        });
+                        marker.setMap(map);
+                        markers.push(marker); // 현재 위치를 배열에 추가
+                    }, function(error) {
+                        console.error("위치 정보를 가져오는 데 실패했습니다:", error);
+                    });
+                } else {
+                    alert("이 브라우저는 Geolocation을 지원하지 않습니다.");
+                }
+            };
+    
+            document.getElementById('drawLineButton').onclick = function() {
+                if (markers.length < 2) {
+                    alert('최소 2개의 지점을 추가해야 합니다.');
+                    return;
+                }
+    
+                // 기존의 마커와 폴리라인 제거
+                if (polyline) {
+                    polyline.setMap(null); // 폴리라인 제거
+                }
+    
+                // 폴리라인을 표시할 경로 설정
+                polyline = new kakao.maps.Polyline({
+                    path: markers.map(marker => marker.getPosition()), // 추가된 지점들
+                    strokeWeight: 5,
+                    strokeColor: '#FF0000',
+                    strokeOpacity: 0.7,
+                    strokeStyle: 'solid'
+                });
+    
+                // 폴리라인을 지도에 표시
+                polyline.setMap(map);
+    
+                // 지도의 중심을 경로의 중간으로 이동
+                var bounds = new kakao.maps.LatLngBounds();
+                markers.forEach(function(marker) {
+                    bounds.extend(marker.getPosition());
+                });
+                map.setBounds(bounds);
+    
+                // 마커와 경로 초기화 후 새로 추가 가능하게 설정
+                markers = []; // 지점 배열 초기화
+            };
+    
+            document.getElementById('resetButton').onclick = function() {
+                alert('모든 경로가 초기화되었습니다.');
+                location.reload();
+            };
+        });
+    
+        function showImage(src) {
+            const modal = document.getElementById('imageModal');
+            modal.querySelector('img').src = src;
+            $(modal).modal('show');
+        }
+
+         document.getElementById('confirmCompleteButton').onclick = function() {
+            const images = Array.from(document.querySelectorAll('.image-gallery img')).map(img => img.src);
+            const courseTitle = document.getElementById('courseTitleInput').value;
+
+           // 제목과 이미지 URL을 서버에 저장
+            fetch('/saveCourse', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: courseTitle,
+                    images: images
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('코스를 저장하는 데 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    alert(`"${courseTitle}"이 성공적으로 저장되었습니다.`);
+                    
+                    // alert이 닫힌 후에 실행되도록 setTimeout을 사용
+                    setTimeout(() => {
+                        document.querySelector('.image-gallery').innerHTML = ''; // 이미지 갤러리 내용 지우기
+                        
+                        // "코스 새로 짜기" 버튼을 자동으로 클릭
+                        document.getElementById('newCourseButton').click();
+                    }, 0); // 즉시 실행
+                } else {
+                    alert("코스를 저장하는 데 실패했습니다.");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("오류가 발생했습니다.");
+            });
+        };
+    </script>    
+</body>
+</html>

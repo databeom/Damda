@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MonTrip</title>
+  <link rel="icon" href="/images/course.png" type="image/png">
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css"> <!-- 추가된 CSS 파일 링크 -->
+  <style>
+  @keyframes rotateIn {
+    from {
+        transform: rotateY(-90deg);
+        opacity: 0;
+    }
+    to {
+        transform: rotateY(0);
+        opacity: 1;
+    }
+  }
+
+  .modal.rotate-in {
+      animation: rotateIn 0.5s forwards; /* 0.5초 동안 회전하는 애니메이션 */
+  }
+  </style>
+</head>
+<body>
+  <div class="container-custom mt-5">
+    <div class="jumbotron text-center" style="background-color: #007bff; color: white;">
+      <h1 class="display-4">이미지를 통한 당신의 여행 코스!</h1>
+      <p class="lead">여행 서비스 담다 입니다.</p>
+      <a href="/" class="btn btn-light btn-lg">다시 추천받기</a>
+      <a href="/course" class="btn btn-light btn-lg">저장된 코스 보기</a>
+    </div>
+
+    <div style="display: flex; align-items: center; padding: 10px; background-color: #f9f9f9; border-radius: 5px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
+      <img src="/images/camera.png" alt="Camera Image" style="width: auto; height: auto; max-width: 50px; max-height: 50px; margin-right: 15px; border-radius: 5px;">
+      <h1 style="font-family: 'Helvetica', sans-serif; font-size: 20px; color: #333; margin: 0;">선택한 사진의 주변 관광지를 추천해 드릴게요</h1>
+    </div>
+  
+  
+
+    <form action="/search" method="GET" style="display: flex; align-items: center; margin-bottom: 20px;"> 
+      <button type="submit" style="border-radius: 20px; padding: 10px; flex: 1; height: 50px; margin-right: 10px; border: 1px solid #ccc; background-color: #f8f9fa; color: gray; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); transition: border-color 0.3s; text-align: left; display: flex; align-items: center; justify-content: flex-start;">
+        어디로 떠날래?
+      </button>      
+    </form>
+    
+    
+
+
+    <div class="row">
+      <!-- 지역 필터링 섹션 -->
+      <div class="col-md-3 mb-4">
+        <h5 class="text-center">지역 선택</h5>
+        <div>
+          <button class="btn-custom " onclick="filterImages('경상북도')">경상북도</button>
+          <button class="btn-custom " onclick="filterImages('강원도')">강원도</button>
+          <button class="btn-custom " onclick="filterImages('경상남도')">경상남도</button>
+          <button class="btn-custom" onclick="filterImages('경기도')">경기도</button>
+          <button class="btn-custom" onclick="filterImages('전라북도')">전라북도</button>
+          <button class="btn-custom" onclick="filterImages('전라남도')">전라남도</button>
+          <button class="btn-custom" onclick="filterImages('충청북도')">충청북도</button>
+          <button class="btn-custom" onclick="filterImages('충청남도')">충청남도</button>
+          <button class="btn-custom" onclick="filterImages('제주도')">제주도</button>
+          <button class="btn-custom" onclick="filterImages('대구')">대구</button>
+          <button class="btn-custom" onclick="filterImages('부산')">부산</button>
+          <button class="btn-custom" onclick="filterImages('광주')">광주</button>
+          <button class="btn-custom" onclick="filterImages('울산')">울산</button>
+          <button class="btn-custom" onclick="filterImages('서울')">서울</button>
+          <button class="btn-custom" onclick="filterImages('인천')">인천</button>
+          <button class="btn-custom" onclick="filterImages('대전')">대전</button>
+          <button class="btn-custom" onclick="filterImages('세종')">세종</button>
+        </div>
+      </div>
+
+      <!-- 사진 갤러리 섹션 -->
+      <div class="col-md-9 mb-4">
+        <div class="row" id="image-gallery">
+            <% if (maps && maps.length > 0) { %>
+                <% maps.forEach((map, index) => { %>
+                    <div class="col-md-4 mb-4"> <!-- 3개의 이미지를 1행에 3개 배치 -->
+                        <div class="card shadow-sm border-light">
+                          <img src="<%= map.firstimage %>" class="card-img-top" alt="<%= map.title %>" data-toggle="modal" data-target="#myModal<%= index %>" style="cursor: pointer;">
+                        </div>
+    
+                        <!-- 모달 구조 -->
+                        <div class="modal fade" id="myModal<%= index %>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel<%= index %>" aria-hidden="true">
+                          <div class="modal-dialog" role="document">
+                              <div class="modal-content">
+                                  <div class="modal-header">
+                                      <h5 class="modal-title" id="myModalLabel<%= index %>"><%= map.title %></h5>
+                                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                          <span aria-hidden="true">&times;</span>
+                                      </button>
+                                  </div>
+                                  <div class="modal-body">
+                                      <img src="<%= map.firstimage %>">
+                                      <p>제목: <%= map.title %></p>
+                                      <p>위치: <%= map.addr %></p>
+                                      <p>작가: <%= map.작가 %></p>
+                                      <p>평점: <%= map.grade %></p>
+                                      <p>리뷰: <%= map.review %></p>
+                                  </div>
+                                  <div class="modal-footer">
+                                    <div style="display: flex; gap: 10px;">
+                                      <button type="button" class="btn btn-secondary" data-dismiss="modal" id="addCourseButton<%= index %>" 
+                                        onclick="sendCourseTitle('<%= map.title %>', '<%= map.mapy %>', '<%= map.mapx %>', '<%= map.firstimage %>', '<%= map.addr %>', '<%= map.grade %>', '<%= map.review %>')">
+                                        코스 담기
+                                      </button>
+                                      <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+                                    </div>
+                                  </div>
+                              </div>
+                          </div>
+                        </div>
+                    </div>
+                    <% if ((index + 1) % 3 === 0) { %> <!-- 3개의 카드 후에 행을 종료 -->
+                    <% } %>
+                <% }); %>
+            <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    // 모달 열릴 때 회전 효과 추가
+    $('.modal').on('show.bs.modal', function () {
+        $(this).addClass('rotate-in');
+    });
+
+    // 모달 닫힐 때 회전 클래스 제거
+    $('.modal').on('hidden.bs.modal', function () {
+        $(this).removeClass('rotate-in');
+    });
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const buttons = document.querySelectorAll('[id^="addCourseButton"]');
+        buttons.forEach(function(button) {
+            // 클릭 이벤트는 onclick 속성에서 직접 처리하므로, 여기서는 생략할 수 있습니다.
+        });
+    });
+
+    function sendCourseTitle(courseTitle, lot, lat, imageUrl, ad, gra, rev) {
+        fetch('/addCourse', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ title: courseTitle, mapx: lot, mapy: lat, firstimage: imageUrl, addr: ad, grade: gra, review: rev })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/map'; // '/map' 페이지로 이동
+            } else {
+                console.error('문제가 발생했습니다:', data.message);
+            }
+        })
+        .catch((error) => {
+            console.error('네트워크 오류:', error);
+        });
+    }
+  </script>
+  <script>
+    function filterImages(location) {
+        const gallery = document.getElementById('image-gallery');
+        gallery.innerHTML = '<p class="text-center">로딩 중...</p>'; // 로딩 메시지 표시
+
+        fetch(`/api/maps?location=${encodeURIComponent(location)}`) // URL 인코딩 추가
+            .then(response => response.json())
+            .then(data => {
+                gallery.innerHTML = ''; // 기존 이미지 초기화
+
+                if (data.maps.length === 0) {
+                    gallery.innerHTML = '<p class="text-center">해당 지역에 대한 이미지가 없습니다.</p>';
+                    return;
+                }
+
+                // 최대 15개의 이미지만 추가
+                const mapsToShow = data.maps.slice(0, 15); // 최대 15개 선택
+                mapsToShow.forEach((map, index) => {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-4 mb-4';
+                    col.innerHTML = `
+                        <div class="card shadow-sm border-light">
+                            <img src="${map.firstimage}" class="card-img-top" alt="${map.title}" data-toggle="modal" data-target="#myModal${index}" style="cursor: pointer;">
+                        </div>
+                        <!-- 모달 구조 -->
+                        <div class="modal fade" id="myModal${index}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel${index}" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="myModalLabel${index}">${map.title}</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <img src="${map.firstimage}">
+                                        <p>제목: ${map.title}</p>
+                                        <p>위치: ${map.addr}</p>
+                                        <p>작가: ${map.작가}</p>
+                                        <p>평점: ${map.grade}</p>
+                                        <p>리뷰 수: ${map.review}</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                    <div style="display: flex; gap: 10px;">
+                                      <button type="button" class="btn btn-secondary" data-dismiss="modal" id="addCourseButton${index}" 
+                                        onclick="sendCourseTitle('${map.title}', '${map.mapy}', '${map.mapx}', '${map.firstimage}', '${map.addr}', '${map.grade}', '${map.review}')">
+                                        코스 담기
+                                      </button>
+                                      <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    gallery.appendChild(col);
+                    
+                    // 모달 열릴 때 회전 효과 추가
+                    $(`#myModal${index}`).on('show.bs.modal', function () {
+                        $(this).addClass('rotate-in');
+                    });
+
+                    // 모달 닫힐 때 회전 클래스 제거
+                    $(`#myModal${index}`).on('hidden.bs.modal', function () {
+                        $(this).removeClass('rotate-in');
+                    });
+
+                    // 각 버튼에 대한 이벤트 리스너 추가
+                    document.getElementById(`addCourseButton${index}`).addEventListener('click', function() {
+                        window.location.href = '/map'; // '/map'으로 이동
+                    });
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching images:', error);
+                gallery.innerHTML = '<p class="text-center text-danger">이미지를 가져오는 데 오류가 발생했습니다.</p>'; // 에러 메시지 표시
+            });
+    }
+  </script>
+</body>
+</html>

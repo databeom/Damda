@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonTrip</title>  
+    <link rel="icon" href="/images/course.png" type="image/png">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        /* 고정 버튼 스타일 */
+        .fixed-button-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+
+        .fixed-button {
+            background-color: #007bff; /* 배경 색상 */
+            color: white; /* 글자 색상 */
+            border: none; /* 테두리 없음 */
+            padding: 10px 20px; /* 패딩 */
+            border-radius: 20px; /* 둥근 모서리 */
+            cursor: pointer; /* 커서 모양 */
+            text-align: center; /* 텍스트 중앙 정렬 */
+        }
+
+        /* 부드러운 스크롤을 위한 스타일 */
+        html {
+            scroll-behavior: smooth; /* CSS로 부드러운 스크롤 효과 추가 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container-custom mt-5">
+        <div class="jumbotron text-center" style="background-color: #007bff; color: white;">
+          <h1 class="display-4">상세 검색</h1>
+          <p class="lead">행정 지역을 정확하게 입력해주세요!</p>
+        </div>
+
+        <form id="searchForm" style="display: flex; align-items: center; margin-bottom: 20px;">
+            <input type="text" name="searchTerm" placeholder="떠나고 싶은 시를 입력하세요." required
+                style="border-radius: 20px; padding: 10px; flex: 1; height: 50px; margin-right: 10px; border: 1px solid #ccc; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); transition: border-color 0.3s;">
+                <button type="submit" style="border-radius: 20px; height: 50px; padding: 10px; background-color: #007bff; color: white; border: none; cursor: pointer; transition: background-color 0.3s;">검색</button>
+        </form>
+
+        <div id="loadingSpinner" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">로딩 중...</span>
+            </div>
+        </div>
+
+        <h2 style="text-align: center; font-size: 2em; margin-top: 20px; margin-bottom: 20px;">검색 결과</h2>
+        <div id="noResultsMessage" style="display: none; text-align: center; font-size: 1.5em; color: red;">입력하신 내용을 찾을 수 없어요.</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>제목</th>
+                    <th>주소</th>
+                    <th>이미지</th>
+                    <th>평점</th>
+                    <th>리뷰 수</th>
+                </tr>
+            </thead>
+            <tbody id="placeTableBody">
+
+            </tbody>
+        </table>
+    </div>
+
+    <div class="fixed-button-container">
+        <button class="fixed-button" onclick="location.href='/'">코스 만들기</button>
+    </div>  
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // 기본 제출 동작 방지
+            const formData = new FormData(this);
+            const searchTerm = formData.get('searchTerm');
+
+            // 로딩 스피너 표시
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('noResultsMessage').style.display = 'none'; // 이전 메시지 숨기기
+
+            fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ searchTerm: searchTerm })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const tableBody = document.getElementById('placeTableBody');
+                tableBody.innerHTML = ''; // 이전 결과 지우기
+
+                // 데이터가 배열인지 체크
+                if (Array.isArray(data) && data.length > 0) {
+                    data.forEach(place => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${place.title}</td>
+                            <td>${place.addr}</td>
+                            <td><img src="${place.firstimage}" alt="${place.title}" style="width:100px;"></td>
+                            <td>${place.grade}</td>
+                            <td>${place.review}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                } else {
+                    // 검색 결과가 없을 경우 메시지 표시
+                    document.getElementById('noResultsMessage').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                document.getElementById('noResultsMessage').innerText = '서버에 오류가 발생했습니다.';
+                document.getElementById('noResultsMessage').style.display = 'block';
+            })
+            .finally(() => {
+                // 로딩 스피너 숨기기
+                document.getElementById('loadingSpinner').style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonTrip</title>
+    <link rel="icon" href="/images/course.png" type="image/png">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        /* 고정 버튼 스타일 */
+        .fixed-button-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+
+        .fixed-button {
+            background-color: #007bff; /* 배경 색상 */
+            color: white; /* 글자 색상 */
+            border: none; /* 테두리 없음 */
+            padding: 10px 20px; /* 패딩 */
+            border-radius: 20px; /* 둥근 모서리 */
+            cursor: pointer; /* 커서 모양 */
+            text-align: center; /* 텍스트 중앙 정렬 */
+        }
+
+        /* 부드러운 스크롤을 위한 스타일 */
+        html {
+            scroll-behavior: smooth; /* CSS로 부드러운 스크롤 효과 추가 */
+        }
+
+        .recommended-attractions-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3열 레이아웃 */
+            gap: 15px; /* 아이템 간의 간격 */
+        }
+
+        .grid-item {
+            background-color: #f9f9f9; /* 배경 색상 */
+            border: 1px solid #ddd; /* 테두리 */
+            border-radius: 5px; /* 둥글게 */
+            padding: 10px; /* 패딩 */
+            text-align: center; /* 텍스트 중앙 정렬 */
+            transition: transform 0.3s; /* 호버 효과를 위한 트랜지션 */
+        }
+
+        .grid-item img {
+            width: 100%; /* 너비를 100%로 설정 */
+            height: 150px; /* 고정된 높이 설정 */
+            object-fit: cover; /* 비율에 맞게 잘라내기 */
+            border-radius: 5px; /* 이미지 모서리 둥글게 */
+        }
+
+
+        .grid-item:hover {
+            transform: scale(1.05); /* 호버 시 확대 효과 */
+        }
+
+        /* 회전 애니메이션 */
+        @keyframes rotateIn {
+            from {
+                transform: rotateY(-90deg);
+                opacity: 0;
+            }
+            to {
+                transform: rotateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal.rotate-in {
+            animation: rotateIn 0.5s forwards; /* 0.5초 동안 회전하는 애니메이션 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container-custom mt-5">
+        <div class="jumbotron text-center" style="background-color: #007bff; color: white;">
+            <h1 class="display-4">여행지 추가 하기</h1>
+            <a href="/" id="newCourseButton" class="btn btn-light btn-lg">코스 새로 짜기</a>
+        </div>
+
+        <div style="display: flex; align-items: center; padding: 10px; background-color: #f9f9f9; border-radius: 5px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); justify-content: space-between;">
+            <div style="display: flex; align-items: center;">
+                <img src="/images/camera.png" alt="Camera Image" style="width: auto; height: auto; max-width: 50px; max-height: 50px; margin-right: 15px; border-radius: 5px;">
+                <h1 style="font-family: 'Helvetica', sans-serif; font-size: 20px; color: #333; margin: 0;">'<%= map.title %>'의 주변 관광지를 추천해 드릴게요</h1>
+            </div>
+            
+            <a href="/map" style="text-decoration: none; margin-left: auto;">
+                <img src="/images/gps.png" alt="Map Button" style="width: 30px; height: 30px; cursor: pointer;">
+            </a>
+        </div>
+
+        <div class="text-center mt-3">
+            <div class="image-gallery">
+                <img src="<%= map.firstimage %>" alt="Course Image" class="gallery-image" onerror="this.onerror=null; this.src='/images/default-image.png';"/>
+            </div>
+        </div>
+
+        <div id="recommendedAttractions" class="mt-4">
+            <ul class="list-group recommended-attractions-grid">
+               
+            </ul>
+        </div>
+        
+        
+
+        <div id="loadingSpinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">로딩 중...</span>
+            </div>
+        </div>
+        
+       
+        
+        <div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="imageModalLabel">이미지 보기</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <img src="" id="modalImage" alt="모달 이미지">
+                        <p>제목: <span id="modalTitle"></span></p>
+                        <p>위치: <span id="modalAddr"></span></p>
+                        <p>평점: <span id="modalGrade"></span></p>
+                        <p>리뷰: <span id="modalReview"></span></p>
+                        <p>작가: <span id="modalwrite"></span></p>
+                    </div>
+                    <div class="modal-footer">
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal" id="addCourseButton" 
+                                    onclick="updateCourseTitle(
+                                        attraction.title, 
+                                        attraction.mapy, 
+                                        attraction.mapx, 
+                                        attraction.firstimage, 
+                                        attraction.addr, 
+                                        attraction.grade, 
+                                        attraction.review,
+                                        attraction.작가
+                                    )">
+                                코스 담기
+                            </button>
+                          <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>    
+        
+        <!-- <div class="fixed-button-container">
+            <button class="fixed-button" data-toggle="modal" data-target="#completeCourseModal">
+                코스 완성하기
+            </button>
+        </div> -->
+        
+        <!-- 모달 -->
+        <!-- <div class="modal fade" id="completeCourseModal" tabindex="-1" aria-labelledby="completeCourseModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="completeCourseModalLabel">코스 완성하기</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" id="courseTitleInput" placeholder="제목을 입력하세요" class="form-control">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+                        <button type="button" class="btn btn-primary" id="confirmCompleteButton">확인</button>
+                    </div>
+                </div>
+            </div>
+        </div> -->
+
+        
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>    
+    <script>
+         document.getElementById('newCourseButton').onclick = function() {
+            // 서버에 데이터 삭제 요청
+            fetch('/deleteCourses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({}) // 필요한 데이터가 있다면 여기에 추가
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('삭제 요청에 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // image-gallery 내용을 모두 지우기
+                    document.querySelector('.image-gallery').innerHTML = '';
+
+                    // 메인 페이지로 이동
+                    location.href = '/'; // 메인 페이지 URL
+                } else {
+                    alert("코스를 삭제하는 데 실패했습니다.");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("오류가 발생했습니다.");
+            });
+        };
+
+        function showImage(src) {
+            document.getElementById('modalImage').src = src;
+        }
+
+        // 거리 계산 함수
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // 지구의 반지름 (킬로미터)
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c; // 결과는 킬로미터 단위
+        }
+
+        // 추천 관광지 로직
+        function recommendAttractions(userLat, userLon, attractions) {
+            const recommended = attractions.map(attraction => {
+                const distance = calculateDistance(userLat, userLon, attraction.mapy, attraction.mapx);
+                return { ...attraction, distance }; // 관광지 정보에 거리 추가
+            });
+
+            // 거리 기준으로 정렬 (가까운 순서)
+            recommended.sort((a, b) => a.distance - b.distance);
+
+            // 추천할 관광지 수 (예: 상위 15개)
+            return recommended.slice(1, 16);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/attractions')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const userLat = '<%= map.mapy %>'; // 사용자 위도
+                    const userLon = '<%= map.mapx %>'; // 사용자 경도
+
+                    const recommendedAttractions = recommendAttractions(userLat, userLon, data);
+
+                    const attractionsList = document.getElementById('recommendedAttractions').querySelector('ul');
+                    recommendedAttractions.forEach(attraction => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'list-group-item grid-item';
+                        listItem.innerHTML = `
+                            <img src="${attraction.firstimage}" alt="${attraction.title}" style="width: 100%; height: auto; margin-bottom: 5px;">
+                            <strong>${attraction.title}</strong><br>
+                            ${attraction.distance.toFixed(2)} km
+                        `;
+
+                        // 클릭 이벤트 추가
+                        listItem.onclick = function() {
+                            // 모달에 정보 세팅
+                            document.getElementById('modalImage').src = attraction.firstimage;
+                            document.getElementById('modalTitle').innerText = attraction.title;
+                            document.getElementById('modalAddr').innerText = attraction.addr || '주소 정보 없음';
+                            document.getElementById('modalGrade').innerText = attraction.grade;
+                            document.getElementById('modalReview').innerText = attraction.review;
+                            document.getElementById('modalwrite').innerText = attraction.작가;
+
+                            // 모달 열기
+                            $('#imageModal').modal('show');
+
+                            // 코스 담기 버튼에 attraction 정보 저장
+                            const addCourseButton = document.getElementById('addCourseButton');
+                            addCourseButton.onclick = function() {
+                                updateCourseTitle(
+                                    attraction.title,
+                                    attraction.mapy,
+                                    attraction.mapx,
+                                    attraction.firstimage,
+                                    attraction.addr,
+                                    attraction.grade,
+                                    attraction.review,
+                                    attraction.작가
+                                );
+                            };
+                        };
+
+                        attractionsList.appendChild(listItem);
+                    });
+
+                    // 모달 닫힐 때 회전 클래스 제거
+                    $('#imageModal').on('hidden.bs.modal', function () {
+                        $(this).removeClass('rotate-in');
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching attractions:', error);
+                    alert('관광지 데이터를 가져오는 데 문제가 발생했습니다.');
+                });
+        });
+
+ 
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttons = document.querySelectorAll('[id^="addCourseButton"]');
+            buttons.forEach(function(button) {
+                // 클릭 이벤트는 onclick 속성에서 직접 처리하므로, 여기서는 생략할 수 있습니다.
+            });
+        });
+
+        function updateCourseTitle(title, mapy, mapx, firstimage, addr, grade, review, 작가) {
+            const data = {
+                title: title,
+                mapy: mapy,
+                mapx: mapx,
+                firstimage: firstimage,
+                addr: addr,
+                grade: grade,
+                review: review,
+                작가: 작가
+            };
+
+            fetch('/update-course', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                // map.ejs로 리디렉션
+                window.location.href = '/map'; // 필요한 URL로 수정
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+
+
+    </script>
+</body>
+</html>

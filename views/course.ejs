@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MonTrip</title>
+  <link rel="icon" href="/images/course.png" type="image/png">
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .course-card {
+      transition: transform 0.2s;
+    }
+    .course-card:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <body>
+    <div class="container mt-5">
+      <div class="jumbotron text-center" style="background-color: #007bff; color: white;">
+        <h1 class="display-4">이미지를 통한 당신의 여행 코스!</h1>
+        <p class="lead">여행 서비스 담다입니다.</p>
+        <a href="/" class="btn btn-light btn-lg">다시 추천받기</a>
+      </div>
+
+      <div class="mt-5">
+        <h1 class="text-center mb-4">여행 코스 목록</h1>
+        <div class="row">
+          <% courses.forEach(course => { %>
+            <div class="col-md-4 mb-4">
+              <div class="card course-card">
+                <img src="<%= course.firstimage %>" class="card-img-top img-fluid" alt="<%= course.title %>">
+                <div class="card-body">
+                  <h5 class="card-title text-center"><%= course.title %></h5>
+                  <button class="btn btn-primary btn-block" data-toggle="modal" data-target="#courseDetailModal" onclick="showCourseDetails(<%= JSON.stringify(course.images) %>, '<%= course.firstimage %>', '<%= course.title %>')">자세히 보기</button>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Course Detail Modal -->
+    <div class="modal fade" id="courseDetailModal" tabindex="-1" role="dialog" aria-labelledby="courseDetailModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="courseDetailModalLabel">여행 코스 상세 정보</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div id="modalImageContainer"></div> <!-- 이미지가 추가될 컨테이너 -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+    function showCourseDetails(images, firstImage, title) {
+        const modalBody = document.getElementById('modalImageContainer');
+        modalBody.innerHTML = ''; // 기존 내용 초기화
+
+        // 제목 설정 (옵션)
+        document.getElementById('courseDetailModalLabel').innerText = title;
+
+        // 모든 이미지 추가
+        if (images.length > 0) {
+            images.forEach(image => {
+                const imgElement = document.createElement('img');
+                imgElement.src = image; // 이미지 경로 설정
+                imgElement.className = 'img-fluid mb-3'; // Bootstrap 클래스 추가
+                imgElement.alt = 'Course Image'; // 이미지 설명
+                modalBody.appendChild(imgElement); // 컨테이너에 이미지 추가
+            });
+        } else {
+            modalBody.innerHTML = '<p>저장된 이미지가 없습니다.</p>'; // 이미지가 없을 때 메시지
+        }
+    }
+
+
+    </script>
+</body>
+</html>
+
